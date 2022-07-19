@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <button onclick="notificationInit()">Subscribe</button>
+    <button onclick="generatePublicKey()">Generate Public Key</button>
+    <script>
+        addEventListener('load', async () => {
+            let sw = await navigator.serviceWorker.register('./sw.js')
+            console.log(await sw)
+        })
+        let serverURL = 'http://localhost:3000'
+
+
+        function generatePublicKey(){
+            fetch(serverURL+'/getPublicNotificationKey', {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => res.json())
+            .then((data) => {
+                window.localStorage.setItem('public_key', data.data.publicKey)
+            })
+        }
+        
+        async function notificationInit(){
+            let sw = await navigator.serviceWorker.ready;
+
+
+            let app = {
+                    userVisibleOnly: true,
+                    applicationServerKey: localStorage.getItem('public_key')
+                }
+
+                let push = await sw.pushManager.subscribe(app)
+                push = JSON.stringify(push)
+            
+                    let o = await fetch(serverURL + '/set-user-token', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: push
+                    })
+                    o = await o.json()
+                    console.log(o);
+                    console.log(push)
+        }
+    </script>
+</body>
+</html>
